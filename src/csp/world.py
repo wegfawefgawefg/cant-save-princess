@@ -1,16 +1,24 @@
+from __future__ import annotations
+
+import random
+
+from csp.entities import Entity
+from csp.graphics import COLORS, COLS, ROWS
+
+
 class World:
-    def __init__(self):
-        self.grid = [[None for _ in range(ROWS)] for _ in range(COLS)]
-        self.walls = set()
-        self.bunny_hut = None
-        self.trapper = None
-        self.item_shop = None
-        self.chest = None
+    def __init__(self) -> None:
+        self.grid: list[list[object | None]] = [[None for _ in range(ROWS)] for _ in range(COLS)]
+        self.walls: set[tuple[int, int]] = set()
+        self.bunny_hut: Entity | None = None
+        self.trapper: Entity | None = None
+        self.item_shop: Entity | None = None
+        self.chest: Entity | None = None
 
         self.generate_dungeon()
         self.spawn_entities()
 
-    def generate_dungeon(self):
+    def generate_dungeon(self) -> None:
         """
         1) Start with random walls.
         2) Make a 10x10 clear area in bottom-right for the Bunny Hut.
@@ -33,9 +41,7 @@ class World:
                 maze_bottom = ROWS
 
                 in_bunny_area = (x >= clear_br_left) and (y >= clear_br_top)
-                in_maze_region = (maze_left <= x < maze_right) and (
-                    maze_top <= y < maze_bottom
-                )
+                in_maze_region = (maze_left <= x < maze_right) and (maze_top <= y < maze_bottom)
 
                 if in_bunny_area:
                     # Force no walls in bottom-right 10x10
@@ -64,7 +70,6 @@ class World:
         # You can customize this if you want more complex labyrinths.
         # Start near the single entrance:
         entrance_x = 15  # the single entrance horizontally
-        entrance_y = maze_top - 1  # just outside the region
         # We'll open one tile at the actual entrance
         if (entrance_x, maze_top) in self.walls:
             self.walls.remove((entrance_x, maze_top))
@@ -95,9 +100,9 @@ class World:
             self.walls.remove((chest_x, chest_y))
 
         # We'll create the chest entity in spawn_entities
-        self.chest_position = (chest_x, chest_y)
+        self.chest_position: tuple[int, int] = (chest_x, chest_y)
 
-    def spawn_entities(self):
+    def spawn_entities(self) -> None:
         # (a) Trapper
         self.trapper = Entity(
             5,

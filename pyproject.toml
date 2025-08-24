@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CantSavePrincess"
+version = "0.1.0"
+description = "A small roguelike refactor with de-OOPed architecture"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Adventure Devs" }]
+dependencies = [
+  "pygame>=2.6,<3",
+]
+
+[project.urls]
+homepage = "https://example.com"
+
+[project.scripts]
+game = "csp.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv]
+dev-dependencies = [
+  "mypy>=1.10",
+  "ruff>=0.5",
+  "pyinstaller>=6.7",
+]
+
+# Using project.scripts for `uv run game`
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["_old"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "RUF"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+ 

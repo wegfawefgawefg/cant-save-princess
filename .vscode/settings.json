@@ -1,0 +1,12 @@
+{
+  "python.defaultInterpreterPath": ".venv/bin/python",
+  "python.analysis.typeCheckingMode": "basic",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.ruff": "explicit",
+    "source.organizeImports.ruff": "explicit"
+  },
+  // Use native Ruff server settings (ruff-lsp deprecated)
+  "ruff.lineLength": 100,
+  "ruff.lint.select": ["E", "F", "I", "UP", "B", "RUF"]
+}

@@ -6,10 +6,17 @@ import pygame
 
 # Graphics-related configuration
 CELL_SIZE: int = 15
-COLS: int = 60
-ROWS: int = 40  # 900x600 play area
+# Viewport size (tiles) rendered in the central play area; keep 16:9
+COLS: int = 64  # 64 * 15 = 960
+ROWS: int = 36  # 36 * 15 = 540  => 960x540 (16:9)
 PANEL_WIDTH: int = 300
-SCREEN_SIZE: tuple[int, int] = (COLS * CELL_SIZE + PANEL_WIDTH, ROWS * CELL_SIZE)
+LEFT_PANEL_WIDTH: int = 150
+GAME_OFFSET_X: int = LEFT_PANEL_WIDTH
+SCREEN_SIZE: tuple[int, int] = (
+    LEFT_PANEL_WIDTH + COLS * CELL_SIZE + PANEL_WIDTH,
+    ROWS * CELL_SIZE,
+)
+FULLSCREEN: bool = False
 FPS: int = 60
 
 # Colors
@@ -36,6 +43,7 @@ class Graphics:
 
     @staticmethod
     def create() -> Graphics:
-        screen = pygame.display.set_mode(SCREEN_SIZE)
+        flags = pygame.FULLSCREEN if FULLSCREEN else 0
+        screen = pygame.display.set_mode(SCREEN_SIZE, flags)
         font = pygame.font.SysFont("Courier", 14)
         return Graphics(screen=screen, font=font)

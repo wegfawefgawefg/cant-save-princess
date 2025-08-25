@@ -34,7 +34,7 @@ class Player(Entity):
             ROWS // 2,
             "@",
             COLORS["player"],
-            "The Chrono Exile",
+            "Hero",
             "Bearer of temporal shards",
         )
         self.health: int = 20

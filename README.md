@@ -43,15 +43,19 @@ uv run ruff format .
 
 ## Packaging
 
-- Dev install: `uv add --dev pyinstaller`
-- Build with Makefile (Linux):
+- Requirements: Python 3.11+, `uv`, `pygame`. Assets live in `sounds/` at repo root.
+- Install build tool: `uv add --dev pyinstaller`
+
+### Fast path (Linux)
 
 ```
 make build-linux
 ./dist/CantSavePrincess
 ```
 
-- Direct PyInstaller command (Linux/macOS):
+### PyInstaller (direct commands)
+
+- Linux/macOS:
 
 ```
 uv run pyinstaller --name CantSavePrincess \
@@ -60,9 +64,7 @@ uv run pyinstaller --name CantSavePrincess \
   pyi_entry.py
 ```
 
-The game loads assets via `csp.assets.asset_path`, which supports both dev and frozen runs.
-
-- Windows build (run on Windows):
+- Windows (run on Windows):
 
 ```
 uv run pyinstaller --name CantSavePrincess \
@@ -70,6 +72,17 @@ uv run pyinstaller --name CantSavePrincess \
   --add-data "sounds;sounds" \
   pyi_entry.py
 ```
+
+Notes:
+- Asset loading uses `csp.assets.asset_path`, which works in dev and frozen bundles.
+- For macOS Gatekeeper, you may need to notarize or use `xattr -dr com.apple.quarantine ./CantSavePrincess` for local testing.
+- To reduce size, prefer `--onefile`. For easier debugging, omit `--onefile` to get an unpacked `dist/` directory.
+
+### Troubleshooting
+
+- No window on headless CI: use `SDL_VIDEODRIVER=dummy uv run game`.
+- No audio: set `SDL_AUDIODRIVER=dummy` to skip audio, or ensure OS audio devices are available.
+- Missing assets: ensure `sounds/` exists relative to the binary, or that it was bundled via `--add-data`.
 
 References:
 https://inventwithpython.com/blog/2012/12/10/8-bit-nes-legend-of-zelda-map-data/

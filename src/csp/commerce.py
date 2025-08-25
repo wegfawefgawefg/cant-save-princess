@@ -1,18 +1,24 @@
 from __future__ import annotations
 
+from __future__ import annotations
+
+from typing import Iterable
+
 from csp.common import is_adjacent
-from csp.state import State
+from csp.state import State, GameMode
+from csp.messages import log
 
 
 def handle_commerce(state: State) -> None:
-    trapper = state.world.trapper
-    shop = state.world.item_shop
-    if is_adjacent(state.player, trapper):
+    # Look for adjacent trader or shop NPCs
+    trader = next((e for e in state.npcs if e.behavior == "trader"), None)
+    shop = next((e for e in state.npcs if e.behavior == "shop"), None)
+    if trader and is_adjacent(state.player, trader):
         trade_with_trapper(state)
-    elif is_adjacent(state.player, shop):
+    elif shop and is_adjacent(state.player, shop):
         open_item_shop(state)
     else:
-        state.message_log.append("Not near any vendor.")
+        log(state, "Not near any vendor.")
 
 
 def trade_with_trapper(state: State) -> None:
@@ -20,18 +26,44 @@ def trade_with_trapper(state: State) -> None:
         amt = state.player.meat
         state.player.gold += amt
         state.player.meat = 0
-        state.message_log.append(f"Traded {amt} meat for {amt} gold.")
+        log(state, f"Traded {amt} rabbit corpses for {amt} gold.")
     else:
-        state.message_log.append("You have no meat to trade.")
+        log(state, "Lazy Trapper: Can't catch any rabbits today... got any rabbit corpses?")
+
+
+def do_shop(state: State, shop_id: str) -> None:
+    """Open a shop session by id using the registered inventory."""
+    state.active_shop_id = shop_id
+    state.menu_shop_index = 0
+    state.mode = GameMode.SHOP
+
+
+def register_shop(state: State, shop_id: str, items: Iterable[dict[str, object]]) -> None:
+    """Register or replace a shop inventory in the registry.
+
+    Each item dict should contain: name (str), cost (int), desc (str),
+    max_qty (int or None), and optionally purchased (int).
+    """
+    normed: list[dict[str, object]] = []
+    for it in items:
+        name = str(it.get("name", "?"))
+        cost = int(it.get("cost", 0))
+        desc = str(it.get("desc", ""))
+        max_qty_raw = it.get("max_qty", None)
+        max_qty = None if max_qty_raw in (None, "None") else int(max_qty_raw)  # type: ignore[assignment]
+        purchased = int(it.get("purchased", 0))
+        normed.append(
+            {
+                "name": name,
+                "cost": cost,
+                "desc": desc,
+                "max_qty": max_qty,
+                "purchased": purchased,
+            }
+        )
+    state.shop_inventories[shop_id] = normed
 
 
 def open_item_shop(state: State) -> None:
-    for item in state.shop_items:
-        cost = int(item["cost"])  # typing help
-        name = str(item["name"])  # typing help
-        if state.player.gold >= cost:
-            state.player.gold -= cost
-            state.message_log.append(f"You bought a {name}!")
-            state.player.inventory[name] = True
-        else:
-            state.message_log.append(f"Not enough gold for {name} ({cost}g).")
+    # Generic entry point for the default item shop
+    do_shop(state, "item_shop")

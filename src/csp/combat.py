@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from csp.state import State
+from csp.messages import log
 
 
 def handle_combat(state: State) -> None:
@@ -22,12 +23,12 @@ def perform_attack(state: State, attack_name: str, dmg: int, rng: int, sound_key
                 state.sounds[sound_key].play()
             except Exception:
                 pass
-        state.message_log.append(f"You used {attack_name} on {target.name} for {dmg} damage!")
+        log(state, f"You used {attack_name} on {target.name} for {dmg} damage!")
         if target.health <= 0:
-            state.message_log.append(f"You killed the {target.name}!")
+            log(state, f"You killed the {target.name}!")
             if target.name == "Bunny":
                 state.player.meat += 1
-                state.message_log.append("You collected 1 meat.")
+                log(state, "You collected 1 rabbit corpse.")
             state.enemies.remove(target)
     else:
-        state.message_log.append(f"No target in range for {attack_name}.")
+        log(state, f"No target in range for {attack_name}.")

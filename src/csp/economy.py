@@ -15,7 +15,10 @@ def update_economy(state: State) -> None:
 
 
 def spawn_bunny(state: State) -> None:
-    hut = state.world.bunny_hut
+    # Find a bunny hut/hole in current map
+    hut = next((e for e in state.npcs if e.behavior == "hut" or e.name == "Bunny Hut"), None)
+    if hut is None:
+        return
     # Try a few random spots near the hut
     for _ in range(10):
         x = hut.x + random.randint(-2, 2)

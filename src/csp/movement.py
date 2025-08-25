@@ -5,9 +5,9 @@ from csp.state import State, all_entities
 
 
 def can_move_to(state: State, x: int, y: int, ignore_entity: object | None = None) -> bool:
-    if not (0 <= x < COLS and 0 <= y < ROWS):
+    if not (0 <= x < state.map_cols and 0 <= y < state.map_rows):
         return False
-    if (x, y) in state.world.walls:
+    if (x, y) in state.map_walls:
         return False
     for e in all_entities(state):
         if e is ignore_entity:

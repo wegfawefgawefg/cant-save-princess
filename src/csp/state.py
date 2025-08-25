@@ -7,9 +7,12 @@ from enum import Enum, auto
 import pygame
 
 from csp.assets import asset_path
+from typing import Any
+from csp.common import Direction
+from csp.dialogue import DialogueTree, initial_dialogues
 from csp.entities import Entity, Player
 from csp.maps import MapDef, Warp, initial_maps
-from csp.dialogue import initial_dialogues
+from csp.shops import ShopItem
 
 
 class GameMode(Enum):
@@ -91,7 +94,7 @@ class State:
 
     # Shop system
     # Map shop id -> list of items (name, cost, desc, max_qty or None, purchased)
-    shop_inventories: dict[str, list[dict[str, object]]] = field(
+    shop_inventories: dict[str, list[ShopItem]] = field(
         default_factory=lambda: {
             "item_shop": [
                 {
@@ -139,7 +142,7 @@ class State:
     last_dir_key: Direction | None = None
 
     # Dialogue system
-    dialogues: dict[str, dict[str, object]] = field(default_factory=initial_dialogues)
+    dialogues: dict[str, DialogueTree] = field(default_factory=initial_dialogues)
     dialogue_id: str | None = None
     dialogue_node: str | None = None
     menu_dialogue_index: int = 0

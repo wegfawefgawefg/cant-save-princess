@@ -1,28 +1,31 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 from csp.entities import Entity
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from csp.state import State
 
 
 @dataclass
 class Warp:
     target_map_id: str
-    target_pos: Tuple[int, int]
-    sideexit_dir: Optional[str] = None  # 'up'|'down'|'left'|'right' or None
+    target_pos: tuple[int, int]
+    sideexit_dir: str | None = None  # 'up'|'down'|'left'|'right' or None
 
 
 @dataclass
 class MapDef:
     id: str
     name: str
-    size: Tuple[int, int]  # (cols, rows)
+    size: tuple[int, int]  # (cols, rows)
     walls: set[tuple[int, int]] = field(default_factory=set)
-    warps: Dict[Tuple[int, int], Warp] = field(default_factory=dict)
-    npcs: List[Entity] = field(default_factory=list)
-    enemies: List[Entity] = field(default_factory=list)
-    step: Optional[Callable[["State"], None]] = None  # type: ignore[name-defined]
+    warps: dict[tuple[int, int], Warp] = field(default_factory=dict)
+    npcs: list[Entity] = field(default_factory=list)
+    enemies: list[Entity] = field(default_factory=list)
+    step: Callable[["State"], None] | None = None
 
 
 def _border_walls(cols: int, rows: int) -> set[tuple[int, int]]:
@@ -49,14 +52,20 @@ def make_start_area() -> MapDef:
     walls.discard(east_gate)
     walls.discard(north_gate)
 
-    warps: Dict[Tuple[int, int], Warp] = {
-        east_gate: Warp(target_map_id="woods_entrance", target_pos=(1, rows // 2), sideexit_dir="right"),
-        north_gate: Warp(target_map_id="town_shop", target_pos=(cols // 2, rows - 2), sideexit_dir="up"),
+    warps: dict[tuple[int, int], Warp] = {
+        east_gate: Warp(
+            target_map_id="woods_entrance", target_pos=(1, rows // 2), sideexit_dir="right"
+        ),
+        north_gate: Warp(
+            target_map_id="town_shop", target_pos=(cols // 2, rows - 2), sideexit_dir="up"
+        ),
     }
 
     # Sign and Sage near the center
     sign = Entity(cols // 2, rows // 2, "?", (200, 200, 100), "Sign", "Directions", behavior="sign")
-    sage = Entity(cols // 2 - 2, rows // 2, "S", (200, 200, 255), "Sage", "Riddle giver", behavior="sage")
+    sage = Entity(
+        cols // 2 - 2, rows // 2, "S", (200, 200, 255), "Sage", "Riddle giver", behavior="sage"
+    )
 
     return MapDef(
         id="start_area",
@@ -79,12 +88,18 @@ def make_woods_entrance() -> MapDef:
     east_gate = (cols - 1, rows // 2)
     walls.discard(west_gate)
     walls.discard(east_gate)
-    warps: Dict[Tuple[int, int], Warp] = {
-        west_gate: Warp(target_map_id="start_area", target_pos=(cols - 2, rows // 2), sideexit_dir="left"),
-        east_gate: Warp(target_map_id="bunny_area", target_pos=(1, rows // 2), sideexit_dir="right"),
+    warps: dict[tuple[int, int], Warp] = {
+        west_gate: Warp(
+            target_map_id="start_area", target_pos=(cols - 2, rows // 2), sideexit_dir="left"
+        ),
+        east_gate: Warp(
+            target_map_id="bunny_area", target_pos=(1, rows // 2), sideexit_dir="right"
+        ),
     }
 
-    trapper = Entity(5, rows // 2, "T", (150, 75, 0), "Lazy Trapper", "Trades meat for gold", behavior="trader")
+    trapper = Entity(
+        5, rows // 2, "T", (150, 75, 0), "Lazy Trapper", "Trades meat for gold", behavior="trader"
+    )
 
     return MapDef(
         id="woods_entrance",
@@ -105,12 +120,22 @@ def make_bunny_area() -> MapDef:
 
     west_gate = (0, rows // 2)
     walls.discard(west_gate)
-    warps: Dict[Tuple[int, int], Warp] = {
-        west_gate: Warp(target_map_id="woods_entrance", target_pos=(cols - 2, rows // 2), sideexit_dir="left")
+    warps: dict[tuple[int, int], Warp] = {
+        west_gate: Warp(
+            target_map_id="woods_entrance", target_pos=(cols - 2, rows // 2), sideexit_dir="left"
+        )
     }
 
     # Bunny hole (hut) near center-right
-    hole = Entity(cols // 2 + 6, rows // 2, "o", (240, 240, 240), "Bunny Hole", "Spawns bunnies", behavior="hut")
+    hole = Entity(
+        cols // 2 + 6,
+        rows // 2,
+        "o",
+        (240, 240, 240),
+        "Bunny Hole",
+        "Spawns bunnies",
+        behavior="hut",
+    )
 
     return MapDef(
         id="bunny_area",
@@ -131,12 +156,20 @@ def make_town_shop() -> MapDef:
 
     south_gate = (cols // 2, rows - 1)
     walls.discard(south_gate)
-    warps: Dict[Tuple[int, int], Warp] = {
+    warps: dict[tuple[int, int], Warp] = {
         south_gate: Warp(target_map_id="start_area", target_pos=(cols // 2, 1), sideexit_dir="down")
     }
 
     # One shop in the middle
-    shop_npc = Entity(cols // 2, rows // 2, "I", (70, 200, 70), "Item Shop", "Sells powerful gear", behavior="shop")
+    shop_npc = Entity(
+        cols // 2,
+        rows // 2,
+        "I",
+        (70, 200, 70),
+        "Item Shop",
+        "Sells powerful gear",
+        behavior="shop",
+    )
 
     return MapDef(
         id="town_shop",
@@ -157,12 +190,14 @@ def make_riddle_room() -> MapDef:
 
     east_gate = (cols - 1, rows // 2)
     walls.discard(east_gate)
-    warps: Dict[Tuple[int, int], Warp] = {
+    warps: dict[tuple[int, int], Warp] = {
         east_gate: Warp(target_map_id="start_area", target_pos=(1, rows // 2), sideexit_dir="right")
     }
 
     # Gold pickup in center
-    gold = Entity(cols // 2, rows // 2, "$", (255, 215, 0), "Gold", "Shiny coin pile", behavior="gold")
+    gold = Entity(
+        cols // 2, rows // 2, "$", (255, 215, 0), "Gold", "Shiny coin pile", behavior="gold"
+    )
 
     return MapDef(
         id="riddle_room",

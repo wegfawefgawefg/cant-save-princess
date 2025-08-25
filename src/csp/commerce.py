@@ -6,6 +6,7 @@ from typing import Iterable
 
 from csp.common import is_adjacent
 from csp.state import State, GameMode
+from csp.shops import ShopItem
 from csp.messages import log
 
 
@@ -38,30 +39,9 @@ def do_shop(state: State, shop_id: str) -> None:
     state.mode = GameMode.SHOP
 
 
-def register_shop(state: State, shop_id: str, items: Iterable[dict[str, object]]) -> None:
-    """Register or replace a shop inventory in the registry.
-
-    Each item dict should contain: name (str), cost (int), desc (str),
-    max_qty (int or None), and optionally purchased (int).
-    """
-    normed: list[dict[str, object]] = []
-    for it in items:
-        name = str(it.get("name", "?"))
-        cost = int(it.get("cost", 0))
-        desc = str(it.get("desc", ""))
-        max_qty_raw = it.get("max_qty", None)
-        max_qty = None if max_qty_raw in (None, "None") else int(max_qty_raw)  # type: ignore[assignment]
-        purchased = int(it.get("purchased", 0))
-        normed.append(
-            {
-                "name": name,
-                "cost": cost,
-                "desc": desc,
-                "max_qty": max_qty,
-                "purchased": purchased,
-            }
-        )
-    state.shop_inventories[shop_id] = normed
+def register_shop(state: State, shop_id: str, items: Iterable[ShopItem]) -> None:
+    """Register or replace a shop inventory in the registry."""
+    state.shop_inventories[shop_id] = list(items)
 
 
 def open_item_shop(state: State) -> None:

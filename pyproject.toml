@@ -30,6 +30,7 @@ dev-dependencies = [
   "mypy>=1.10",
   "ruff>=0.5",
   "pyinstaller>=6.7",
+  "pyright>=1.1.357",
 ]
 
 # Using project.scripts for `uv run game`

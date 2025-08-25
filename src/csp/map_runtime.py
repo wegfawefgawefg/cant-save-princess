@@ -1,25 +1,19 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from csp.common import Direction
-from csp.maps import MapDef, Warp
+from csp.maps import Warp
 from csp.state import State
 
 
-def load_map(state: State, map_id: str, spawn_pos: Optional[tuple[int, int]] = None) -> None:
+def load_map(state: State, map_id: str, spawn_pos: tuple[int, int] | None = None) -> None:
     m = state.maps[map_id]
     state.current_map_id = map_id
     state.map_walls = set(m.walls)
     state.map_warps = dict(m.warps)
     state.map_cols, state.map_rows = m.size
     # Deep copy entities positions (simple copy ok for our Entity)
-    state.npcs = [
-        _copy_entity(e) for e in m.npcs
-    ]
-    state.enemies = [
-        _copy_entity(e) for e in m.enemies
-    ]
+    state.npcs = [_copy_entity(e) for e in m.npcs]
+    state.enemies = [_copy_entity(e) for e in m.enemies]
     # Position player
     if spawn_pos is not None:
         state.player.x, state.player.y = spawn_pos
@@ -44,7 +38,7 @@ def _copy_entity(e):
     return c
 
 
-def check_warp_after_move(state: State, last_dir: Optional[Direction]) -> None:
+def check_warp_after_move(state: State, last_dir: Direction | None) -> None:
     pos = (state.player.x, state.player.y)
     warp = state.map_warps.get(pos)
     if not warp:
@@ -77,6 +71,7 @@ def open_start_left_path(state: State) -> None:
     # Open west gate in start_area and add warp to riddle_room
     if "start_area" not in state.maps or "riddle_room" not in state.maps:
         from csp.messages import log
+
         log(state, "[debug] Missing maps for left path.")
         return
     start = state.maps["start_area"]
@@ -94,4 +89,5 @@ def open_start_left_path(state: State) -> None:
         state.map_walls.discard(west_gate)
         state.map_warps[west_gate] = start.warps[west_gate]
     from csp.messages import log
+
     log(state, "You hear a mechanism unlocking to the west.")

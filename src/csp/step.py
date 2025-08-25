@@ -2,28 +2,27 @@ from __future__ import annotations
 
 import pygame
 
+from csp.actions import perform_dialogue_action
 from csp.ai import enemy_ai
 from csp.combat import handle_combat
-from csp.commerce import handle_commerce
 from csp.common import Direction
 from csp.draw import (
+    draw_dialogue,
     draw_frame,
+    draw_inventory_menu,
     draw_main_menu,
     draw_settings_menu,
     draw_shop_menu,
-    draw_inventory_menu,
-    draw_dialogue,
 )
 from csp.economy import update_economy
+from csp.flags import tick_flags
 from csp.graphics import FPS
 from csp.interact import handle_interact
 from csp.items import use_item
+from csp.map_runtime import check_warp_after_move
 from csp.messages import log
 from csp.movement import move_entity
-from csp.state import State, GameMode
-from csp.map_runtime import check_warp_after_move
-from csp.actions import perform_dialogue_action
-from csp.flags import tick_flags
+from csp.state import GameMode, State
 
 
 def _play_sound(state: State, key: str) -> None:
@@ -37,9 +36,6 @@ def _play_sound(state: State, key: str) -> None:
 
 def _do_player_move(state: State, direction: Direction) -> None:
     dx, dy = direction.value
-    from csp.movement import move_entity
-    from csp.ai import enemy_ai
-    from csp.economy import update_economy
 
     if move_entity(state, state.player, dx, dy):
         state.turn_count += 1
@@ -93,12 +89,28 @@ def process_inputs_playing(state: State, event: pygame.event.Event) -> None:
         state.last_dir_key = dir_map[event.key]
         _do_player_move(state, dir_map[event.key])
     elif event.key in (
-        pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5,
-        pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9, pygame.K_0,
+        pygame.K_1,
+        pygame.K_2,
+        pygame.K_3,
+        pygame.K_4,
+        pygame.K_5,
+        pygame.K_6,
+        pygame.K_7,
+        pygame.K_8,
+        pygame.K_9,
+        pygame.K_0,
     ):
         key_map = {
-            pygame.K_1: "1", pygame.K_2: "2", pygame.K_3: "3", pygame.K_4: "4", pygame.K_5: "5",
-            pygame.K_6: "6", pygame.K_7: "7", pygame.K_8: "8", pygame.K_9: "9", pygame.K_0: "0",
+            pygame.K_1: "1",
+            pygame.K_2: "2",
+            pygame.K_3: "3",
+            pygame.K_4: "4",
+            pygame.K_5: "5",
+            pygame.K_6: "6",
+            pygame.K_7: "7",
+            pygame.K_8: "8",
+            pygame.K_9: "9",
+            pygame.K_0: "0",
         }
         slot = key_map[event.key]
         item = state.binds.get(slot)
@@ -165,11 +177,11 @@ def process_inputs_shop(state: State, event: pygame.event.Event) -> None:
             _play_sound(state, "bow")
     elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
         it = items[state.menu_shop_index]
-        name = str(it.get("name", "?"))
-        cost = int(it.get("cost", 0))
-        max_qty = it.get("max_qty")
-        purchased = int(it.get("purchased", 0))
-        if (max_qty is not None) and (purchased >= int(max_qty)):
+        name = it["name"]
+        cost = it["cost"]
+        max_qty = it["max_qty"]
+        purchased = it.get("purchased", 0)
+        if (max_qty is not None) and (purchased >= max_qty):
             log(state, f"{name} is sold out.")
             _play_sound(state, "grunt")
             return
@@ -209,14 +221,30 @@ def process_inputs_inventory(state: State, event: pygame.event.Event) -> None:
         if state.menu_inventory_index != prev:
             _play_sound(state, "bow")
     elif event.key in (
-        pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5,
-        pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9, pygame.K_0,
+        pygame.K_1,
+        pygame.K_2,
+        pygame.K_3,
+        pygame.K_4,
+        pygame.K_5,
+        pygame.K_6,
+        pygame.K_7,
+        pygame.K_8,
+        pygame.K_9,
+        pygame.K_0,
     ):
         if not items:
             return
         key_map = {
-            pygame.K_1: "1", pygame.K_2: "2", pygame.K_3: "3", pygame.K_4: "4", pygame.K_5: "5",
-            pygame.K_6: "6", pygame.K_7: "7", pygame.K_8: "8", pygame.K_9: "9", pygame.K_0: "0",
+            pygame.K_1: "1",
+            pygame.K_2: "2",
+            pygame.K_3: "3",
+            pygame.K_4: "4",
+            pygame.K_5: "5",
+            pygame.K_6: "6",
+            pygame.K_7: "7",
+            pygame.K_8: "8",
+            pygame.K_9: "9",
+            pygame.K_0: "0",
         }
         slot = key_map[event.key]
         item = items[state.menu_inventory_index]
@@ -230,9 +258,15 @@ def process_inputs_inventory(state: State, event: pygame.event.Event) -> None:
 def process_inputs_dialogue(state: State, event: pygame.event.Event) -> None:
     if event.type != pygame.KEYDOWN:
         return
-    tree = state.dialogues.get(state.dialogue_id or "", {})
+    tree = state.dialogues.get(state.dialogue_id or "")
+    if not tree:
+        state.mode = GameMode.PLAYING
+        return
     nodes = tree.get("nodes", {})
-    node = nodes.get(state.dialogue_node or "", {})
+    node = nodes.get(state.dialogue_node or "")
+    if not node:
+        state.mode = GameMode.PLAYING
+        return
     options = node.get("options", [])
     if event.key == pygame.K_UP:
         if options:
@@ -247,13 +281,13 @@ def process_inputs_dialogue(state: State, event: pygame.event.Event) -> None:
             opt = options[state.menu_dialogue_index]
             action = opt.get("action")
             if action:
-                perform_dialogue_action(state, str(action))
+                perform_dialogue_action(state, action)
             nxt = opt.get("next")
             if nxt:
-                state.dialogue_node = str(nxt)
+                state.dialogue_node = nxt
                 state.menu_dialogue_index = 0
-                node = nodes.get(state.dialogue_node, {})
-                if node.get("end"):
+                node2 = nodes.get(state.dialogue_node, {})
+                if node2.get("end"):
                     state.mode = GameMode.PLAYING
     elif event.key == pygame.K_ESCAPE:
         if tree.get("backoutable", True):
@@ -280,7 +314,11 @@ def step_loop(state: State, screen, font) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN and (event.key == pygame.K_q) and (event.mod & pygame.KMOD_CTRL):
+            elif (
+                event.type == pygame.KEYDOWN
+                and (event.key == pygame.K_q)
+                and (event.mod & pygame.KMOD_CTRL)
+            ):
                 # Dev-time super quit
                 running = False
             else:
@@ -297,11 +335,17 @@ def step_loop(state: State, screen, font) -> None:
                     process_inputs_dialogue(state, event)
                 else:
                     # Running toggle + message
-                    if event.type == pygame.KEYDOWN and event.key in (pygame.K_LCTRL, pygame.K_RCTRL):
+                    if event.type == pygame.KEYDOWN and event.key in (
+                        pygame.K_LCTRL,
+                        pygame.K_RCTRL,
+                    ):
                         if not state.run_active:
                             state.run_active = True
                             log(state, "Hero begins running.")
-                    elif event.type == pygame.KEYUP and event.key in (pygame.K_LCTRL, pygame.K_RCTRL):
+                    elif event.type == pygame.KEYUP and event.key in (
+                        pygame.K_LCTRL,
+                        pygame.K_RCTRL,
+                    ):
                         if state.run_active:
                             state.run_active = False
                             log(state, "Hero stops running.")

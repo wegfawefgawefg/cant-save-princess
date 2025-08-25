@@ -2,8 +2,17 @@ from __future__ import annotations
 
 import pygame
 
-from csp.graphics import CELL_SIZE, COLORS, COLS, ROWS, SCREEN_SIZE, GAME_OFFSET_X, LEFT_PANEL_WIDTH, PANEL_WIDTH
-from csp.state import State, all_entities, GameMode
+from csp.graphics import (
+    CELL_SIZE,
+    COLORS,
+    COLS,
+    GAME_OFFSET_X,
+    LEFT_PANEL_WIDTH,
+    PANEL_WIDTH,
+    ROWS,
+    SCREEN_SIZE,
+)
+from csp.state import State, all_entities
 
 
 def draw_grid(state: State, screen: pygame.Surface, cam_x: int, cam_y: int) -> None:
@@ -52,7 +61,7 @@ def draw_ui(state: State, screen: pygame.Surface, font: pygame.font.Font) -> Non
     left_x = 10
     left_y = 10
     screen.blit(font.render("Binds:", True, COLORS["text"]), (left_x, left_y))
-    binds_list = ["1","2","3","4","5","6","7","8","9","0"]
+    binds_list = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
     for i, k in enumerate(binds_list):
         label = state.binds.get(k, "-")
         txt = f" {k}: {label}"
@@ -77,11 +86,7 @@ def draw_ui(state: State, screen: pygame.Surface, font: pygame.font.Font) -> Non
     max_y = ROWS * CELL_SIZE - 10
     # Flatten wrapped lines and show the most recent lines at the bottom
     all_lines: list[tuple[str, int]] = []
-    for entry in state.message_log:
-        if isinstance(entry, tuple):
-            msg, when = entry
-        else:
-            msg, when = str(entry), state.turn_count - 2
+    for msg, when in state.message_log:
         wrapped = _wrap_text(font, msg, max_w)
         for w in wrapped:
             all_lines.append((w, when))
@@ -174,7 +179,10 @@ def draw_frame(state: State, screen: pygame.Surface, font: pygame.font.Font) -> 
         if state.show_labels:
             label = f"{e.name}"
             lbl_surf = font.render(label, True, (255, 255, 255))
-            screen.blit(lbl_surf, (GAME_OFFSET_X + (e.x - cam_x) * CELL_SIZE, (e.y - cam_y) * CELL_SIZE - 10))
+            screen.blit(
+                lbl_surf,
+                (GAME_OFFSET_X + (e.x - cam_x) * CELL_SIZE, (e.y - cam_y) * CELL_SIZE - 10),
+            )
 
     # Draw player last
     pygame.draw.circle(
@@ -189,7 +197,13 @@ def draw_frame(state: State, screen: pygame.Surface, font: pygame.font.Font) -> 
     if state.show_labels:
         label = f"{state.player.name}"
         lbl_surf = font.render(label, True, (255, 255, 255))
-        screen.blit(lbl_surf, (GAME_OFFSET_X + (state.player.x - cam_x) * CELL_SIZE, (state.player.y - cam_y) * CELL_SIZE - 10))
+        screen.blit(
+            lbl_surf,
+            (
+                GAME_OFFSET_X + (state.player.x - cam_x) * CELL_SIZE,
+                (state.player.y - cam_y) * CELL_SIZE - 10,
+            ),
+        )
 
     # Grid only over the visible map area
     draw_grid(state, screen, cam_x, cam_y)
@@ -243,7 +257,7 @@ def draw_main_menu(state: State, screen: pygame.Surface, font: pygame.font.Font)
     options = ("Play", "Settings", "Quit")
     start_y = 200
     for i, label in enumerate(options):
-        selected = (i == state.menu_main_index)
+        selected = i == state.menu_main_index
         color = (255, 215, 0) if selected else COLORS["text"]
         prefix = "> " if selected else "  "
         _draw_centered_text(screen, font, prefix + label, start_y + i * 30, color)
@@ -255,7 +269,7 @@ def draw_settings_menu(state: State, screen: pygame.Surface, font: pygame.font.F
     options = ("Back",)
     start_y = 200
     for i, label in enumerate(options):
-        selected = (i == state.menu_settings_index)
+        selected = i == state.menu_settings_index
         color = (255, 215, 0) if selected else COLORS["text"]
         prefix = "> " if selected else "  "
         _draw_centered_text(screen, font, prefix + label, start_y + i * 30, color)
@@ -270,18 +284,24 @@ def draw_shop_menu(state: State, screen: pygame.Surface, font: pygame.font.Font)
         return
     start_y = 140
     for i, it in enumerate(items):
-        selected = (i == state.menu_shop_index)
+        selected = i == state.menu_shop_index
         color = (255, 215, 0) if selected else COLORS["text"]
-        name = str(it.get("name", "?"))
-        cost = int(it.get("cost", 0))
-        max_qty = it.get("max_qty")
-        purchased = int(it.get("purchased", 0))
-        stock_txt = "∞" if max_qty in (None, "None") else f"{purchased}/{int(max_qty)}"
+        name = it["name"]
+        cost = it["cost"]
+        max_qty = it["max_qty"]
+        purchased = it.get("purchased", 0)
+        stock_txt = "∞" if max_qty is None else f"{purchased}/{max_qty}"
         owned = state.owned_items.get(name, 0)
         line = f"{name} - {cost}g  [{stock_txt}]  (own: {owned})"
         prefix = "> " if selected else "  "
         _draw_centered_text(screen, font, prefix + line, start_y + i * 28, color)
-    _draw_centered_text(screen, font, "Enter: Buy  |  Esc: Quit (dev)", start_y + len(items) * 28 + 20, COLORS["text"])
+    _draw_centered_text(
+        screen,
+        font,
+        "Enter: Buy  |  Esc: Quit (dev)",
+        start_y + len(items) * 28 + 20,
+        COLORS["text"],
+    )
 
 
 def draw_inventory_menu(state: State, screen: pygame.Surface, font: pygame.font.Font) -> None:
@@ -293,12 +313,18 @@ def draw_inventory_menu(state: State, screen: pygame.Surface, font: pygame.font.
         return
     start_y = 140
     for i, (name, qty) in enumerate(items):
-        selected = (i == state.menu_inventory_index)
+        selected = i == state.menu_inventory_index
         color = (255, 215, 0) if selected else COLORS["text"]
         line = f"{name} x{qty}"
         prefix = "> " if selected else "  "
         _draw_centered_text(screen, font, prefix + line, start_y + i * 28, color)
-    _draw_centered_text(screen, font, "Press number to bind. Esc: Quit (dev)", start_y + len(items) * 28 + 20, COLORS["text"])
+    _draw_centered_text(
+        screen,
+        font,
+        "Press number to bind. Esc: Quit (dev)",
+        start_y + len(items) * 28 + 20,
+        COLORS["text"],
+    )
 
 
 def draw_dialogue(state: State, screen: pygame.Surface, font: pygame.font.Font) -> None:

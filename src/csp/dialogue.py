@@ -1,9 +1,27 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional, TypedDict
 
 
-def initial_dialogues() -> Dict[str, Dict[str, Any]]:
+class DialogueOption(TypedDict, total=False):
+    label: str
+    next: str
+    action: str
+
+
+class DialogueNode(TypedDict, total=False):
+    text: str
+    options: list[DialogueOption]
+    end: bool
+
+
+class DialogueTree(TypedDict, total=False):
+    start: str
+    backoutable: bool
+    nodes: Dict[str, DialogueNode]
+
+
+def initial_dialogues() -> Dict[str, DialogueTree]:
     # Simple two-part riddle
     return {
         "riddle1": {
@@ -40,4 +58,3 @@ def initial_dialogues() -> Dict[str, Dict[str, Any]]:
             },
         }
     }
-

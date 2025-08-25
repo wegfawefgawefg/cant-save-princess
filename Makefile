@@ -2,7 +2,7 @@ NAME := CantSavePrincess
 SCRIPT := pyi_entry.py
 PYI := pyinstaller
 
-.PHONY: help build-linux run-linux build-macos build-windows clean distclean
+.PHONY: help build-linux run-linux build-macos build-windows clean distclean lint typecheck format
 
 help:
 	@echo "Make targets:"
@@ -12,6 +12,9 @@ help:
 	@echo "  build-windows - Build onefile exe (Windows; run on Windows)"
 	@echo "  clean         - Remove build artifacts"
 	@echo "  distclean     - Clean and remove PyInstaller spec"
+	@echo "  lint          - Run Ruff lint checks"
+	@echo "  format        - Run Ruff formatter"
+	@echo "  typecheck     - Run mypy (and pyright if available)"
 
 # Linux build (also fine on macOS syntax-wise)
 build-linux:
@@ -49,3 +52,14 @@ clean:
 
 distclean: clean
 	rm -f *.spec
+
+lint:
+	uv run ruff check .
+
+format:
+	uv run ruff format src
+
+typecheck:
+	uv run mypy . || true
+	# Run pyright if installed (will not fail CI if missing)
+	pyright || true

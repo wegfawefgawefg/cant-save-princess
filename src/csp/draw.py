@@ -14,6 +14,7 @@ from csp.graphics import (
 )
 from csp.state import State, all_entities, GameMode
 from csp.sprites import load_sprite_for_entity, load_sprite_for_name
+from csp.ai import append_debug_shapes
 
 
 def draw_grid(state: State, screen: pygame.Surface, cam_x: int, cam_y: int) -> None:
@@ -49,9 +50,7 @@ def draw_ui(state: State, screen: pygame.Surface, font: pygame.font.Font) -> Non
         f"Health: {state.player.health}",
         f"Turn: {state.turn_count}",
         "-------",
-        "[H] Help",
         "[P] Punch",
-        "[S] Shop/Talk",
         "[L] Labels",
         "[I] Inventory",
         "[Space] Interact",
@@ -145,29 +144,13 @@ def draw_ui(state: State, screen: pygame.Surface, font: pygame.font.Font) -> Non
         y += line_h
 
 
-def draw_help(screen: pygame.Surface, font: pygame.font.Font) -> None:
-    help_text = [
-        "Controls:",
-        "Arrow Keys: Move",
-        "H: Toggle Help",
-        "P: Punch (adjacent)",
-        "S: Shop/Talk (trapper or item shop)",
-        "Space: Interact (chest, lever, etc.)",
-        "1: Use Sword (if owned)",
-        "2: Use Bow (if owned)",
-        "L: Toggle on-screen labels",
-    ]
-    overlay = pygame.Surface((SCREEN_SIZE[0], SCREEN_SIZE[1]))
-    overlay.set_alpha(180)
-    overlay.fill((0, 0, 0))
-    screen.blit(overlay, (0, 0))
-    for i, line in enumerate(help_text):
-        screen.blit(font.render(line, True, COLORS["text"]), (50, 50 + i * 20))
-
 
 def draw_frame(state: State, screen: pygame.Surface, font: pygame.font.Font) -> None:
     """Draws the gameplay scene (when in PLAYING mode)."""
     screen.fill(COLORS["background"])
+
+    # Clear per-frame debug shapes, then allow systems to append
+    state.debug_shapes = []
 
     # Camera in tile coords. Center on player, clamp to map; center small maps.
     view_w, view_h = COLS, ROWS
@@ -263,11 +246,42 @@ def draw_frame(state: State, screen: pygame.Surface, font: pygame.font.Font) -> 
             ),
         )
 
+    # Append and draw debug shapes (e.g., pig detection range)
+    append_debug_shapes(state)
+    if state.debug_shapes_on and state.debug_shapes:
+        for shp in state.debug_shapes:
+            try:
+                styp = shp.get("type")
+                color = tuple(shp.get("color", (255, 255, 0)))
+                if styp == "rect":
+                    (x1, y1), (x2, y2) = shp.get("aabb", ((0, 0), (0, 0)))
+                    px1 = GAME_OFFSET_X + (x1 - cam_x) * CELL_SIZE
+                    py1 = (y1 - cam_y) * CELL_SIZE
+                    px2 = GAME_OFFSET_X + (x2 - cam_x + 1) * CELL_SIZE
+                    py2 = (y2 - cam_y + 1) * CELL_SIZE
+                    pygame.draw.rect(screen, color, (px1, py1, px2 - px1, py2 - py1), width=1)
+                    lbl = shp.get("label")
+                    if lbl:
+                        screen.blit(font.render(str(lbl), True, color), (px1 + 2, py1 + 2))
+                elif styp == "circle":
+                    cx, cy = shp.get("pos", (0, 0))
+                    rad = int(shp.get("radius", 1)) * CELL_SIZE
+                    pcx = GAME_OFFSET_X + (cx - cam_x) * CELL_SIZE + CELL_SIZE // 2
+                    pcy = (cy - cam_y) * CELL_SIZE + CELL_SIZE // 2
+                    pygame.draw.circle(screen, color, (pcx, pcy), rad, width=1)
+                elif styp == "text":
+                    tx, ty = shp.get("pos", (0, 0))
+                    txt = str(shp.get("label", ""))
+                    px = GAME_OFFSET_X + (tx - cam_x) * CELL_SIZE
+                    py = (ty - cam_y) * CELL_SIZE
+                    screen.blit(font.render(txt, True, color), (px, py))
+            except Exception:
+                pass
+
     # Grid only over the visible map area
     draw_grid(state, screen, cam_x, cam_y)
     draw_ui(state, screen, font)
-    if state.show_help:
-        draw_help(screen, font)
+    # Help overlay removed; Shop/Talk handled via Interact
 
     # Map name label at bottom of play area
     if state.current_map_id and state.current_map_id in state.maps:
@@ -373,7 +387,7 @@ def draw_shop_menu(state: State, screen: pygame.Surface, font: pygame.font.Font)
 def draw_inventory_menu(state: State, screen: pygame.Surface, font: pygame.font.Font) -> None:
     screen.fill(COLORS["background"])
     _draw_centered_text(screen, font, "Inventory (press 1..0 to bind)", 80, COLORS["text"])
-    items = sorted(state.owned_items.items())
+    items = sorted([(k, v) for k, v in state.owned_items.items() if int(v) > 0])
     if not items:
         _draw_centered_text(screen, font, "No items owned.", 130, COLORS["text"])
         return

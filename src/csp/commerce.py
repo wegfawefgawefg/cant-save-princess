@@ -8,6 +8,7 @@ from csp.common import is_adjacent
 from csp.state import State, GameMode
 from csp.shops import ShopItem
 from csp.messages import log
+from csp.items import cleanup_zero_qty_items
 
 
 def handle_commerce(state: State) -> None:
@@ -37,12 +38,22 @@ def trade_with_trapper(state: State) -> None:
         log(state, "Lazy Trapper: Can't catch any game today... got anything to sell?")
         return
     state.player.gold += total
+    # Remove zero-quantity items from inventory to avoid listing them
     if rabbits:
-        state.owned_items["Rabbit Meat"] = 0
+        try:
+            del state.owned_items["Rabbit Meat"]
+        except KeyError:
+            pass
     if pigs:
-        state.owned_items["Pig Meat"] = 0
+        try:
+            del state.owned_items["Pig Meat"]
+        except KeyError:
+            pass
     if bears:
-        state.owned_items["Bear Meat"] = 0
+        try:
+            del state.owned_items["Bear Meat"]
+        except KeyError:
+            pass
     parts = []
     if rabbits:
         parts.append(f"{rabbits} rabbit")
@@ -52,6 +63,7 @@ def trade_with_trapper(state: State) -> None:
         parts.append(f"{bears} bear")
     sold = ", ".join(parts)
     log(state, f"Traded {sold} meat for {total} gold.")
+    cleanup_zero_qty_items(state)
 
 
 def do_shop(state: State, shop_id: str) -> None:

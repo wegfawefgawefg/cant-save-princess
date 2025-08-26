@@ -80,6 +80,7 @@ Notes for agents
 - **Creation:** `map_runtime.load_map` populates walls/solids as collidable `Tile`s. A map's optional `on_load(state)` may add or modify tiles for that map instance.
 - **Movement triggers:** `map_runtime.process_triggers_after_move(state)` inspects the player’s current tile (e.g., `tag == 'leaves'`) and applies effects. Remove/replace tiles by editing `state.map_tiles` directly.
 - **Interactions:** `interact.handle_interact(state, preferred_dir)` inspects adjacent tiles/entities and runs logic. Add small, explicit branches for special cases (e.g., a torch tile in `riddle_room`).
+- **Controls:** Interact (Space) also covers Shop and Talk; there are no separate Shop/Talk keys. The Help overlay is removed; keep the UI concise.
 - **Semantics:** Use lightweight fields like `Tile.tag` and `Entity.behavior` to signal intent; avoid per‑type classes or event buses.
 
 **Items & Per‑Item State**

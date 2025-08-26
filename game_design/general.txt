@@ -26,3 +26,9 @@ Flags System
 Entity model
 - Add `alignment: 'ally'|'neutral'|'hostile'` to `Entity` (default 'neutral').
 - Add `attackable: bool` (default False; set True for hostiles and harvestables like bunnies).
+
+Debug Shapes
+- Toggle at runtime with D.
+- Per-frame list: `state.debug_shapes` is cleared at the start of each frame.
+- Shape schema: `{type: 'rect'|'circle'|'text', aabb/pos, color, label}`.
+- Systems (AI, map steps) may append shapes to visualize logic: e.g., pig detection area (yellow rect), trigger AABBs, or diagnostic labels.

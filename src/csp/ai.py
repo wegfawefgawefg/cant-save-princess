@@ -55,3 +55,24 @@ def enemy_ai(state: State) -> None:
                     move_entity(state, enemy, dx, 0)
             if abs(state.player.x - enemy.x) + abs(state.player.y - enemy.y) == 1:
                 damage_player(state, 2, source=f"{enemy.name} swipe")
+
+
+def append_debug_shapes(state: State) -> None:
+    """Append per-frame debug shapes to state.debug_shapes.
+
+    Example: for pigs, draw a yellow detection AABB representing their charge range.
+    """
+    # Pig detection radius (Manhattan) is 10; show a bounding rect for quick visualization
+    for e in state.npcs:
+        if getattr(e, "behavior", None) == "pig":
+            r = 10
+            x1, y1 = e.x - r, e.y - r
+            x2, y2 = e.x + r, e.y + r
+            state.debug_shapes.append(
+                {
+                    "type": "rect",
+                    "aabb": ((x1, y1), (x2, y2)),
+                    "color": (255, 255, 0),
+                    "label": "pig range",
+                }
+            )

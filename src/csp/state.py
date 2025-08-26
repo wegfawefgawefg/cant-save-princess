@@ -70,7 +70,6 @@ class State:
     turn_count: int = 0
 
     # Toggles
-    show_help: bool = False
     show_labels: bool = True
 
     # Basic in-game messages: list of (text, turn_when_added)

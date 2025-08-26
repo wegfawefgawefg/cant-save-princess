@@ -1,18 +1,24 @@
 Cant Save Princess — Working Plan
 =================================
 
-put that we can use pylance/ruff, etc in the agent_start.md
+using bow when no targets in range consumed an arrow...
 
-Debug Shapes
-- Toggle: `state.debug_shapes_on`.
-- Per frame list: `state.debug_shapes` (cleared each frame).
-- Shape: `{type: 'rect'|'circle'|'text', aabb/pos, color, label}`.
-- Map step can push shapes to visualize conditions (e.g., region AABBs, state of checks in red/green).
-
-for example a map step could put a yellow transparent rect in its warp tiles. or on hidden areas we want to mark or something.
 
 Tile Graphics Enhancement
-- add lots more types of tiles and replace the walls with them. 
+- Add lots more types of tiles and replace the walls with them.
+- Next assets to generate/place:
+  - Alternate walls: `pine_wall` (taller conifers), `mossy_stone_wall` (aged interior/exterior).
+  - Props: `crate`, `barrel`, `lantern` (non-collidable light source), `signpost`.
+  - Interior decor: `rug`, `bench`, `bookshelf`, `counter`.
+  - Ground details: `mushroom_tuft`, `flower_patch`, `fallen_log`.
+  - Fences/bridges: `wooden_fence`, `short_bridge` for water crossings.
+- Placement plan:
+  - Forest maps: mix `pine_wall` with `tree_wall`, scatter `mushroom_tuft`, `fallen_log`.
+  - Town/shop interiors: use `mossy_stone_wall`, add `rug`, `bench`, `bookshelf`, `counter`.
+  - Pathing: consider a light/dark dirt `path_tile` set to guide routes.
+- Notes:
+  - Keep props collidability sensible (furniture collidable; decor non-collidable).
+  - Prefer small, readable silhouettes at 16px; keep palette cc-29.
 
 
 Forest Enhancement
@@ -54,6 +60,19 @@ Items & Torch State
 - Design per‑item state in inventory (e.g., Torch: `lit`, `remaining`).
 - Replace global `player.torch_lit` flag with item‑state driven lighting and per‑turn decrement.
 - Ensure draw/vision consults lit torches from inventory state.
+
+Items: Stackable + Consumables
+- Add item metadata: `stackable: bool`, `consumable: bool` (and optional `max_stack`).
+- On granting items:
+  - If `stackable` is false, cap quantity at 1 regardless of further grants.
+  - If `stackable` is true, increment count up to `max_stack` (if provided).
+- On using items generically:
+  - If `consumable` is true, decrement quantity by 1 on successful use.
+  - After decrement, if quantity is 0, remove the item and unbind any hotkeys pointing to it.
+- UI display rules:
+  - For non‑stackable items, do not show a quantity suffix.
+  - For stackable items, show `({qty})` only when qty > 1.
+  - For items with extra state (e.g., Torch `lit/remaining`), append status before qty.
 
 Sprites
 - Regenerate `green_hero` and `sword` sprites with transparent backgrounds.

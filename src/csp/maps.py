@@ -106,6 +106,16 @@ def make_woods_entrance() -> MapDef:
         5, rows // 2, "T", (150, 75, 0), "Lazy Trapper", "Trades meat for gold", behavior="trader"
     )
 
+    def _on_load(state: "State") -> None:
+        from csp.tiles import Tile
+        # Render all walls as tree walls
+        for (pos, tile) in list(state.map_tiles.items()):
+            if tile.tag == "wall":
+                tile.sprite = "tree_wall"
+        # Ground decoration near trapper
+        bag_pos = (6, rows // 2)
+        state.map_tiles[bag_pos] = Tile(name="Bag", sprite="bag", collidable=False, tag="decor")
+
     return MapDef(
         id="woods_entrance",
         name="Woods Entrance",
@@ -115,6 +125,7 @@ def make_woods_entrance() -> MapDef:
         npcs=[trapper],
         enemies=[],
         step=None,
+        on_load=_on_load,
     )
 
 
@@ -181,6 +192,17 @@ def make_town_shop() -> MapDef:
     except Exception:
         pass
 
+    def _on_load(state: "State") -> None:
+        from csp.tiles import Tile
+        # Stone walls visuals
+        for (pos, tile) in list(state.map_tiles.items()):
+            if tile.tag == "wall":
+                tile.sprite = "stone_wall"
+        # Furniture
+        cx, cy = cols // 2, rows // 2
+        state.map_tiles[(cx - 2, cy)] = Tile(name="Table", sprite="table", collidable=True, tag="furniture")
+        state.map_tiles[(cx + 2, cy)] = Tile(name="Pillar", sprite="pillar", collidable=True, tag="furniture")
+
     return MapDef(
         id="town_shop",
         name="Town Shop",
@@ -190,6 +212,7 @@ def make_town_shop() -> MapDef:
         npcs=[shop_npc],
         enemies=[],
         step=None,
+        on_load=_on_load,
     )
 
 
@@ -250,6 +273,18 @@ def make_forest_a() -> MapDef:
         east_gate: Warp(target_map_id="forest_d", target_pos=(1, rows // 2), sideexit_dir="right"),
         north_gate: Warp(target_map_id="forest_b", target_pos=(cols // 2, rows - 2), sideexit_dir="up"),
     }
+    def _on_load(state: "State") -> None:
+        from csp.tiles import Tile
+        # Forest walls as trees
+        for (pos, tile) in list(state.map_tiles.items()):
+            if tile.tag == "wall":
+                tile.sprite = "tree_wall"
+        # Scatter some rocks and grass
+        for pos in {(4, 4), (7, 9), (10, 3)}:
+            state.map_tiles[pos] = Tile(name="Rock", sprite="rock", collidable=True, tag="rock")
+        for pos in {(5, 6), (9, 5), (12, 7)}:
+            state.map_tiles[pos] = Tile(name="Grass", sprite="grass_tuft", collidable=False, tag="grass")
+
     return MapDef(
         id="forest_a",
         name="Forest A",
@@ -259,6 +294,7 @@ def make_forest_a() -> MapDef:
         npcs=[],
         enemies=[],
         step=None,
+        on_load=_on_load,
     )
 
 
@@ -279,7 +315,16 @@ def make_forest_b() -> MapDef:
     pig.health = 3
     def _on_load(state: "State") -> None:
         from csp.map_helpers import hide_by_name_if_flag
+        from csp.tiles import Tile
         hide_by_name_if_flag(state, names=["Pig"], flag="forest_b.pig_dead")
+        # Tree walls visuals and some scatter decorations
+        for (pos, tile) in list(state.map_tiles.items()):
+            if tile.tag == "wall":
+                tile.sprite = "tree_wall"
+        for pos in {(6, 4), (12, 11)}:
+            state.map_tiles[pos] = Tile(name="Rock", sprite="rock", collidable=True, tag="rock")
+        for pos in {(8, 6), (14, 7)}:
+            state.map_tiles[pos] = Tile(name="Grass", sprite="grass_tuft", collidable=False, tag="grass")
     return MapDef(
         id="forest_b",
         name="Forest B",
@@ -311,9 +356,16 @@ def make_forest_c() -> MapDef:
         from csp.map_helpers import hide_by_name_if_flag
         from csp.tiles import Tile
         hide_by_name_if_flag(state, names=["Bear"], flag="forest_c.bear_dead")
+        # Tree walls visuals
+        for (pos, tile) in list(state.map_tiles.items()):
+            if tile.tag == "wall":
+                tile.sprite = "tree_wall"
         leaves = {(5, 5), (8, 7), (12, 4), (6, 9), (10, 6), (14, 8)}
         for pos in leaves:
             state.map_tiles[pos] = Tile(name="Leaves", sprite="leaves", collidable=False, tag="leaves")
+        # A few rocks
+        for pos in {(4, 10), (15, 3)}:
+            state.map_tiles[pos] = Tile(name="Rock", sprite="rock", collidable=True, tag="rock")
     return MapDef(
         id="forest_c",
         name="Forest C",
@@ -342,6 +394,15 @@ def make_forest_d() -> MapDef:
         north_gate: Warp(target_map_id="forest_c", target_pos=(cols // 2, rows - 2), sideexit_dir="up"),
         east_gate: Warp(target_map_id="bunny_area", target_pos=(1, rows // 2), sideexit_dir="right"),
     }
+    def _on_load(state: "State") -> None:
+        from csp.tiles import Tile
+        for (pos, tile) in list(state.map_tiles.items()):
+            if tile.tag == "wall":
+                tile.sprite = "tree_wall"
+        # Some grass
+        for pos in {(5, 7), (9, 4), (17, 9)}:
+            state.map_tiles[pos] = Tile(name="Grass", sprite="grass_tuft", collidable=False, tag="grass")
+
     return MapDef(
         id="forest_d",
         name="Forest D",
@@ -351,6 +412,7 @@ def make_forest_d() -> MapDef:
         npcs=[],
         enemies=[],
         step=None,
+        on_load=_on_load,
     )
 
 

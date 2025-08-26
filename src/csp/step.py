@@ -59,9 +59,7 @@ def _do_player_move(state: State, direction: Direction) -> None:
 def process_inputs_playing(state: State, event: pygame.event.Event) -> None:
     if event.type != pygame.KEYDOWN:
         return
-    if event.key == pygame.K_h:
-        state.show_help = not state.show_help
-    elif event.key == pygame.K_l:
+    if event.key == pygame.K_l:
         state.show_labels = not state.show_labels
     elif event.key == pygame.K_i:
         state.menu_inventory_index = 0
@@ -83,6 +81,11 @@ def process_inputs_playing(state: State, event: pygame.event.Event) -> None:
         if preferred is None:
             preferred = state.last_dir_key
         handle_interact(state, preferred)
+    elif event.key == pygame.K_d:
+        state.debug_shapes_on = not state.debug_shapes_on
+        from csp.messages import log
+
+        log(state, f"Debug shapes: {'on' if state.debug_shapes_on else 'off'}.")
     elif event.key in (
         pygame.K_UP,
         pygame.K_DOWN,
@@ -213,7 +216,7 @@ def process_inputs_shop(state: State, event: pygame.event.Event) -> None:
 def process_inputs_inventory(state: State, event: pygame.event.Event) -> None:
     if event.type != pygame.KEYDOWN:
         return
-    items = sorted(state.owned_items.keys())
+    items = sorted([k for k, v in state.owned_items.items() if int(v) > 0])
     # Allow back-out even with no items
     if event.key == pygame.K_UP:
         if not items:
@@ -271,8 +274,6 @@ def process_inputs_dead(state: State, event: pygame.event.Event) -> None:
     if event.key == pygame.K_i:
         state.menu_inventory_index = 0
         state.mode = GameMode.INVENTORY
-    elif event.key == pygame.K_h:
-        state.show_help = not state.show_help
     elif event.key == pygame.K_l:
         state.show_labels = not state.show_labels
 

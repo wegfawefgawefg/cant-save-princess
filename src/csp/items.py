@@ -5,6 +5,25 @@ from csp.state import State
 from csp.messages import log
 
 
+def cleanup_zero_qty_items(state: State) -> None:
+    """Remove zero-qty items and unbind them from hotkeys."""
+    to_remove = [k for k, v in state.owned_items.items() if int(v) <= 0]
+    if not to_remove:
+        return
+    for k in to_remove:
+        try:
+            del state.owned_items[k]
+        except KeyError:
+            pass
+    # Unbind any slots pointing to removed items
+    for slot, name in list(state.binds.items()):
+        if name in to_remove:
+            try:
+                del state.binds[slot]
+            except KeyError:
+                pass
+
+
 def use_item(state: State, item_name: str) -> None:
     if item_name not in state.player.inventory:
         log(state, f"You don't have a {item_name}.")
@@ -25,6 +44,7 @@ def use_item(state: State, item_name: str) -> None:
                     pass
             return
         state.owned_items["Arrows"] = arrows - 1
+        cleanup_zero_qty_items(state)
         perform_attack(state, "Bow Shot", 2, 2, "bow")
     elif item_name == "Torch":
         # Re-light torch if you have remaining fuel

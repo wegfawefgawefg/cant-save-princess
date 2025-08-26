@@ -1,0 +1,28 @@
+Flags
+- Adopt namespaced flags: `riddle_room.gold_taken`, `forest_b.pig_dead`, `forest_c.bear_dead`.
+
+Inventory
+- All meats are owned items: Rabbit Meat, Pig Meat, Bear Meat.
+
+Transitions
+- Use warp tiles with optional `sideexit_dir` for directional exits.
+- Borders can be solid walls; place explicit warp tiles for transitions.
+
+Steps
+- Global step: handles timers, economy, AI, input routing.
+- Map step: per-map logic (spawns, scripted events, area checks using flags and debug shapes).
+
+Flags System
+- Class: `Flag(name: str, scope: ('global'|'map'), timer: int|None)`.
+- Helpers:
+  - `set_flag(name, scope='map', timer=None)` (optionally for a specific map).
+  - `unset_flag(name)`.
+  - `has_flag(name)` checks appropriate scope (global or current map).
+- Timers decrement in global step; when reaching 0, flag unsets.
+- Map-scoped flags auto-unset on map switch; global flags persist.
+- Namespaced flags to avoid pollution (map_id.prefix pattern).
+
+- Combat should target attackable NPCs based on alignment/flags.
+Entity model
+- Add `alignment: 'ally'|'neutral'|'hostile'` to `Entity` (default 'neutral').
+- Add `attackable: bool` (default False; set True for hostiles and harvestables like bunnies).

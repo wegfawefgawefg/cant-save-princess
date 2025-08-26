@@ -10,7 +10,10 @@ readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Adventure Devs" }]
 dependencies = [
+  "openai>=1.101.0",
+  "pillow>=11.3.0",
   "pygame>=2.6,<3",
+  "python-dotenv>=1.1.1",
 ]
 
 [project.urls]
@@ -34,6 +37,12 @@ dev-dependencies = [
 ]
 
 # Using project.scripts for `uv run game`
+
+[tool.uv.scripts]
+# Run the asset image generator tool
+asset = "python tools/gen_asset_image.py"
+asset-generate = "python tools/gen_asset_image.py generate"
+asset-reprocess = "python tools/gen_asset_image.py reprocess-all"
 
 [tool.ruff]
 line-length = 100

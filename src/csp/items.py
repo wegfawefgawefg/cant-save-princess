@@ -26,3 +26,33 @@ def use_item(state: State, item_name: str) -> None:
             return
         state.owned_items["Arrows"] = arrows - 1
         perform_attack(state, "Bow Shot", 2, 2, "bow")
+    elif item_name == "Torch":
+        # Re-light torch if you have remaining fuel
+        data = state.player.inventory.get("Torch")
+        if isinstance(data, dict):
+            rem = int(data.get("remaining", 0))
+            if rem <= 0:
+                log(state, "The torch has no fuel left.")
+                return
+            data["lit"] = True
+            log(state, "You light the torch.")
+        else:
+            # If stored differently, just log fallback
+            log(state, "You wave the torch around.")
+
+
+def tick_items_per_turn(state: State) -> None:
+    """Advance per-item timers by one step (e.g., torch burn)."""
+    tdata = state.player.inventory.get("Torch")
+    if isinstance(tdata, dict):
+        if tdata.get("lit"):
+            try:
+                rem = int(tdata.get("remaining", 0))
+            except Exception:
+                rem = 0
+            if rem > 0:
+                tdata["remaining"] = rem - 1
+                if tdata["remaining"] <= 0:
+                    tdata["remaining"] = 0
+                    tdata["lit"] = False
+                    log(state, "Your torch burns out.")

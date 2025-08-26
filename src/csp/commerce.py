@@ -23,13 +23,35 @@ def handle_commerce(state: State) -> None:
 
 
 def trade_with_trapper(state: State) -> None:
-    if state.player.meat > 0:
-        amt = state.player.meat
-        state.player.gold += amt
-        state.player.meat = 0
-        log(state, f"Traded {amt} rabbit corpses for {amt} gold.")
-    else:
-        log(state, "Lazy Trapper: Can't catch any rabbits today... got any rabbit corpses?")
+    # Prices
+    price_rabbit = 1
+    price_pig = 50
+    price_bear = 200
+
+    rabbits = int(state.owned_items.get("Rabbit Meat", 0))
+    pigs = int(state.owned_items.get("Pig Meat", 0))
+    bears = int(state.owned_items.get("Bear Meat", 0))
+
+    total = rabbits * price_rabbit + pigs * price_pig + bears * price_bear
+    if total <= 0:
+        log(state, "Lazy Trapper: Can't catch any game today... got anything to sell?")
+        return
+    state.player.gold += total
+    if rabbits:
+        state.owned_items["Rabbit Meat"] = 0
+    if pigs:
+        state.owned_items["Pig Meat"] = 0
+    if bears:
+        state.owned_items["Bear Meat"] = 0
+    parts = []
+    if rabbits:
+        parts.append(f"{rabbits} rabbit")
+    if pigs:
+        parts.append(f"{pigs} pig")
+    if bears:
+        parts.append(f"{bears} bear")
+    sold = ", ".join(parts)
+    log(state, f"Traded {sold} meat for {total} gold.")
 
 
 def do_shop(state: State, shop_id: str) -> None:

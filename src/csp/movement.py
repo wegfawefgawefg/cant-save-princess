@@ -7,7 +7,9 @@ from csp.state import State, all_entities
 def can_move_to(state: State, x: int, y: int, ignore_entity: object | None = None) -> bool:
     if not (0 <= x < state.map_cols and 0 <= y < state.map_rows):
         return False
-    if (x, y) in state.map_walls:
+    # Dynamic tile collision
+    tile = state.map_tiles.get((x, y)) if hasattr(state, "map_tiles") else None
+    if tile is not None and getattr(tile, "collidable", False):
         return False
     for e in all_entities(state):
         if e is ignore_entity:

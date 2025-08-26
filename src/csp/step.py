@@ -15,11 +15,12 @@ from csp.draw import (
     draw_shop_menu,
 )
 from csp.economy import update_economy
-from csp.flags import tick_flags
+from csp.flags import tick_flags, has_flag
 from csp.graphics import FPS
 from csp.interact import handle_interact
 from csp.items import use_item
 from csp.map_runtime import check_warp_after_move
+from csp.map_runtime import process_triggers_after_move
 from csp.messages import log
 from csp.movement import move_entity
 from csp.state import GameMode, State
@@ -39,10 +40,18 @@ def _do_player_move(state: State, direction: Direction) -> None:
 
     if move_entity(state, state.player, dx, dy):
         state.turn_count += 1
+        process_triggers_after_move(state)
         enemy_ai(state)
         update_economy(state)
         check_warp_after_move(state, direction)
         tick_flags(state)
+        # Handle per-item timed effects (e.g., torch burn) after flags tick
+        try:
+            from csp.items import tick_items_per_turn
+
+            tick_items_per_turn(state)
+        except Exception:
+            pass
         state.move_repeat_last_time_ms = pygame.time.get_ticks()
         state.move_repeat_last_dir = direction.value
 
@@ -252,7 +261,20 @@ def process_inputs_inventory(state: State, event: pygame.event.Event) -> None:
         log(state, f"Bound {item} to [{slot}].")
         _play_sound(state, "punch")
     elif event.key in (pygame.K_ESCAPE, pygame.K_i):
-        state.mode = GameMode.PLAYING
+        # If the player is dead, return to DEAD screen; otherwise back to playing
+        state.mode = GameMode.PLAYING if state.player.health > 0 else GameMode.DEAD
+
+
+def process_inputs_dead(state: State, event: pygame.event.Event) -> None:
+    if event.type != pygame.KEYDOWN:
+        return
+    if event.key == pygame.K_i:
+        state.menu_inventory_index = 0
+        state.mode = GameMode.INVENTORY
+    elif event.key == pygame.K_h:
+        state.show_help = not state.show_help
+    elif event.key == pygame.K_l:
+        state.show_labels = not state.show_labels
 
 
 def process_inputs_dialogue(state: State, event: pygame.event.Event) -> None:
@@ -333,6 +355,8 @@ def step_loop(state: State, screen, font) -> None:
                     process_inputs_inventory(state, event)
                 elif state.mode == GameMode.DIALOGUE:
                     process_inputs_dialogue(state, event)
+                elif state.mode == GameMode.DEAD:
+                    process_inputs_dead(state, event)
                 else:
                     # Running toggle + message
                     if event.type == pygame.KEYDOWN and event.key in (

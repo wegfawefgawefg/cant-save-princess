@@ -12,7 +12,8 @@ from csp.graphics import (
     ROWS,
     SCREEN_SIZE,
 )
-from csp.state import State, all_entities
+from csp.state import State, all_entities, GameMode
+from csp.sprites import load_sprite_for_entity, load_sprite_for_name
 
 
 def draw_grid(state: State, screen: pygame.Surface, cam_x: int, cam_y: int) -> None:
@@ -42,7 +43,9 @@ def draw_ui(state: State, screen: pygame.Surface, font: pygame.font.Font) -> Non
     panel_x = LEFT_PANEL_WIDTH + COLS * CELL_SIZE + 10
     stats = [
         f"Gold: {state.player.gold}",
-        f"Rabbit Corpses: {state.player.meat}",
+        f"Rabbit Meat: {int(state.owned_items.get('Rabbit Meat', 0))}",
+        f"Pig Meat: {int(state.owned_items.get('Pig Meat', 0))}",
+        f"Bear Meat: {int(state.owned_items.get('Bear Meat', 0))}",
         f"Health: {state.player.health}",
         f"Turn: {state.turn_count}",
         "-------",
@@ -67,15 +70,52 @@ def draw_ui(state: State, screen: pygame.Surface, font: pygame.font.Font) -> Non
         txt = f" {k}: {label}"
         screen.blit(font.render(txt, True, COLORS["text"]), (left_x, left_y + 20 + i * 18))
 
-    # Inventory under binds
+    # Inventory under binds (show icons and bound slot numbers)
     inv_y = left_y + 20 + len(binds_list) * 18 + 16
     screen.blit(font.render("Inventory:", True, COLORS["text"]), (left_x, inv_y))
     inv_y += 18
-    if state.owned_items:
-        for name, qty in list(state.owned_items.items())[:12]:
-            line = f" {name}: {qty}"
-            screen.blit(font.render(line, True, COLORS["text"]), (left_x, inv_y))
-            inv_y += 16
+    # Inventory entries: owned items; annotate Torch with lit/remaining from item state
+    entries: list[tuple[str, int]] = [(k, int(v)) for k, v in state.owned_items.items() if int(v) > 0]
+    if entries:
+        # Reverse map: item name -> bound slot key (e.g., '1')
+        bound_slot: dict[str, str] = {}
+        for slot, iname in state.binds.items():
+            if iname:
+                bound_slot[iname] = slot
+        # Draw up to 12 entries
+        for name, qty in entries[:12]:
+            slot_txt = bound_slot.get(name)
+            # Annotate Torch with lit/remaining if present
+            if name == "Torch":
+                tdata = state.player.inventory.get("Torch")
+                if isinstance(tdata, dict):
+                    try:
+                        rem = int(tdata.get("remaining", 0))
+                    except Exception:
+                        rem = 0
+                    lit = bool(tdata.get("lit", False))
+                    status = "lit" if lit else "unlit"
+                    label = f" Torch ({status}) [{rem}] ({qty})"
+                else:
+                    label = f" {name} ({qty})"
+            else:
+                label = f" {name} ({qty})"
+            if slot_txt:
+                label = f" [{slot_txt}]" + label
+            # Try icon
+            try:
+                from csp.sprites import load_sprite_for_name
+
+                icon = load_sprite_for_name(name)
+            except Exception:
+                icon = None
+            if icon is not None:
+                screen.blit(icon, (left_x, inv_y - 1))
+                text_x = left_x + icon.get_width() + 6
+            else:
+                text_x = left_x
+            screen.blit(font.render(label, True, COLORS["text"]), (text_x, inv_y))
+            inv_y += max(16, (icon.get_height() if icon is not None else 0)) or 16
     else:
         screen.blit(font.render(" (empty)", True, COLORS["text"]), (left_x, inv_y))
 
@@ -144,22 +184,34 @@ def draw_frame(state: State, screen: pygame.Surface, font: pygame.font.Font) -> 
     if map_h < view_h:
         cam_y = -(view_h - map_h) // 2
 
-    # Draw walls
-    for wall in state.map_walls:
-        wx, wy = wall
-        # Only draw if within view bounds
-        if not (cam_x <= wx < cam_x + view_w and cam_y <= wy < cam_y + view_h):
+    # Draw plain collidable tiles (no sprite) as wall rects
+    for (tx, ty), tile in state.map_tiles.items():
+        if not tile.collidable or tile.sprite is not None:
+            continue
+        if not (cam_x <= tx < cam_x + view_w and cam_y <= ty < cam_y + view_h):
             continue
         pygame.draw.rect(
             screen,
             COLORS["wall"],
             (
-                GAME_OFFSET_X + (wx - cam_x) * CELL_SIZE,
-                (wy - cam_y) * CELL_SIZE,
+                GAME_OFFSET_X + (tx - cam_x) * CELL_SIZE,
+                (ty - cam_y) * CELL_SIZE,
                 CELL_SIZE,
                 CELL_SIZE,
             ),
         )
+
+    # Draw tile images (non-grid visuals like torches/leaves)
+    for (tx, ty), tile in list(state.map_tiles.items()):
+        if tile.sprite is None:
+            continue
+        if not (cam_x <= tx < cam_x + view_w and cam_y <= ty < cam_y + view_h):
+            continue
+        spr = load_sprite_for_name(tile.sprite)
+        if spr is not None:
+            sx = GAME_OFFSET_X + (tx - cam_x) * CELL_SIZE
+            sy = (ty - cam_y) * CELL_SIZE
+            screen.blit(spr, (sx, sy))
 
     # Draw entities (non-player first)
     for e in all_entities(state):
@@ -167,15 +219,18 @@ def draw_frame(state: State, screen: pygame.Surface, font: pygame.font.Font) -> 
             continue
         if not (cam_x <= e.x < cam_x + view_w and cam_y <= e.y < cam_y + view_h):
             continue
-        pygame.draw.circle(
-            screen,
-            e.color,
-            (
-                GAME_OFFSET_X + (e.x - cam_x) * CELL_SIZE + CELL_SIZE // 2,
-                (e.y - cam_y) * CELL_SIZE + CELL_SIZE // 2,
-            ),
-            CELL_SIZE // 2,
-        )
+        sx = GAME_OFFSET_X + (e.x - cam_x) * CELL_SIZE
+        sy = (e.y - cam_y) * CELL_SIZE
+        spr = load_sprite_for_entity(e)
+        if spr is not None:
+            screen.blit(spr, (sx, sy))
+        else:
+            pygame.draw.circle(
+                screen,
+                e.color,
+                (sx + CELL_SIZE // 2, sy + CELL_SIZE // 2),
+                CELL_SIZE // 2,
+            )
         if state.show_labels:
             label = f"{e.name}"
             lbl_surf = font.render(label, True, (255, 255, 255))
@@ -185,15 +240,18 @@ def draw_frame(state: State, screen: pygame.Surface, font: pygame.font.Font) -> 
             )
 
     # Draw player last
-    pygame.draw.circle(
-        screen,
-        COLORS["player"],
-        (
-            GAME_OFFSET_X + (state.player.x - cam_x) * CELL_SIZE + CELL_SIZE // 2,
-            (state.player.y - cam_y) * CELL_SIZE + CELL_SIZE // 2,
-        ),
-        CELL_SIZE // 2,
-    )
+    psx = GAME_OFFSET_X + (state.player.x - cam_x) * CELL_SIZE
+    psy = (state.player.y - cam_y) * CELL_SIZE
+    pspr = load_sprite_for_entity(state.player)
+    if pspr is not None:
+        screen.blit(pspr, (psx, psy))
+    else:
+        pygame.draw.circle(
+            screen,
+            COLORS["player"],
+            (psx + CELL_SIZE // 2, psy + CELL_SIZE // 2),
+            CELL_SIZE // 2,
+        )
     if state.show_labels:
         label = f"{state.player.name}"
         lbl_surf = font.render(label, True, (255, 255, 255))
@@ -218,6 +276,14 @@ def draw_frame(state: State, screen: pygame.Surface, font: pygame.font.Font) -> 
         lx = GAME_OFFSET_X + (COLS * CELL_SIZE - label_surf.get_width()) // 2
         ly = ROWS * CELL_SIZE - label_surf.get_height() - 4
         screen.blit(label_surf, (lx, ly))
+
+    # Death overlay
+    if state.mode == GameMode.DEAD:
+        overlay = pygame.Surface((COLS * CELL_SIZE, ROWS * CELL_SIZE), pygame.SRCALPHA)
+        overlay.fill((80, 0, 0, 160))
+        screen.blit(overlay, (GAME_OFFSET_X, 0))
+        _draw_centered_text(screen, font, "You Died", 120, (255, 80, 80))
+        _draw_centered_text(screen, font, "Press I for Inventory", 160, COLORS["text"])
 
 
 def _draw_centered_text(
@@ -298,7 +364,7 @@ def draw_shop_menu(state: State, screen: pygame.Surface, font: pygame.font.Font)
     _draw_centered_text(
         screen,
         font,
-        "Enter: Buy  |  Esc: Quit (dev)",
+        "Enter: Buy  |  Esc: Quit",
         start_y + len(items) * 28 + 20,
         COLORS["text"],
     )
@@ -311,17 +377,21 @@ def draw_inventory_menu(state: State, screen: pygame.Surface, font: pygame.font.
     if not items:
         _draw_centered_text(screen, font, "No items owned.", 130, COLORS["text"])
         return
+    # Reverse map for bound slot display
+    rev_bind: dict[str, str] = {v: k for k, v in state.binds.items() if v}
     start_y = 140
     for i, (name, qty) in enumerate(items):
         selected = i == state.menu_inventory_index
         color = (255, 215, 0) if selected else COLORS["text"]
-        line = f"{name} x{qty}"
+        slot = rev_bind.get(name)
+        slot_txt = f" [{slot}]" if slot else ""
+        line = f"{name}{slot_txt} x{qty}"
         prefix = "> " if selected else "  "
         _draw_centered_text(screen, font, prefix + line, start_y + i * 28, color)
     _draw_centered_text(
         screen,
         font,
-        "Press number to bind. Esc: Quit (dev)",
+        "Press number to bind. Esc: Quit",
         start_y + len(items) * 28 + 20,
         COLORS["text"],
     )

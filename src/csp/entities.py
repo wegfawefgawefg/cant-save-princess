@@ -13,6 +13,8 @@ class Entity:
         name: str,
         description: str,
         behavior: str | None = None,
+        alignment: str = "neutral",
+        attackable: bool = False,
     ) -> None:
         self.x: int = x
         self.y: int = y
@@ -21,6 +23,8 @@ class Entity:
         self.name: str = name
         self.description: str = description
         self.behavior: str | None = behavior
+        self.alignment: str = alignment
+        self.attackable: bool = attackable
         self.health: int = 3
         self.inventory: dict[str, object] = {}
         # For special items/entities
@@ -36,6 +40,8 @@ class Player(Entity):
             COLORS["player"],
             "Hero",
             "Bearer of temporal shards",
+            alignment="ally",
+            attackable=False,
         )
         self.health: int = 20
         self.gold: int = 0
@@ -43,3 +49,5 @@ class Player(Entity):
         # Basic punch remains
         self.actions: dict[str, dict[str, int]] = {"punch": {"damage": 1, "range": 1}}
         self.inventory: dict[str, object] = {"gold": 0, "meat": 0}
+        # Prefer a generated hero sprite if available
+        self.sprite_name = "green_hero"

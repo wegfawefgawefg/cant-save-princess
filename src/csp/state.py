@@ -7,7 +7,7 @@ from enum import Enum, auto
 import pygame
 
 from csp.assets import asset_path
-from typing import Any
+from csp.tiles import Tile
 from csp.common import Direction
 from csp.dialogue import DialogueTree, initial_dialogues
 from csp.entities import Entity, Player
@@ -22,6 +22,7 @@ class GameMode(Enum):
     SHOP = auto()
     INVENTORY = auto()
     DIALOGUE = auto()
+    DEAD = auto()
 
 
 def create_enemies() -> list[Entity]:
@@ -62,17 +63,15 @@ class State:
     player: Player = field(default_factory=Player)
     # Current map runtime data
     current_map_id: str | None = None
-    map_walls: set[tuple[int, int]] = field(default_factory=set)
     map_warps: dict[tuple[int, int], Warp] = field(default_factory=dict)
     map_cols: int = 0
     map_rows: int = 0
     npcs: list[Entity] = field(default_factory=list)
-    enemies: list[Entity] = field(default_factory=list)
     turn_count: int = 0
 
     # Toggles
     show_help: bool = False
-    show_labels: bool = False
+    show_labels: bool = True
 
     # Basic in-game messages: list of (text, turn_when_added)
     message_log: deque[tuple[str, int]] = field(default_factory=lambda: deque(maxlen=50))
@@ -133,6 +132,8 @@ class State:
     # Debug shapes
     debug_shapes_on: bool = False
     debug_shapes: list[dict[str, object]] = field(default_factory=list)
+    # Runtime tiles for current map
+    map_tiles: dict[tuple[int, int], Tile] = field(default_factory=dict)
 
     # Movement repeat (only in PLAYING mode)
     move_repeat_interval_ms: int = 100  # ~10x per second
@@ -140,6 +141,10 @@ class State:
     move_repeat_last_dir: tuple[int, int] | None = None
     run_active: bool = False
     last_dir_key: Direction | None = None
+    # Global spawn counters
+    bunnies_spawned: int = 0
+    # Track timed effects
+    has_torch_lit: bool = False
 
     # Dialogue system
     dialogues: dict[str, DialogueTree] = field(default_factory=initial_dialogues)
@@ -168,4 +173,4 @@ class State:
 
 
 def all_entities(state: State) -> list[Entity]:
-    return [*state.enemies, *state.npcs, state.player]
+    return [*state.npcs, state.player]

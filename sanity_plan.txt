@@ -1,0 +1,24 @@
+Combat
+- Remove `enemies` usage; target from `state.npcs` where `attackable==True` and `alignment!='ally'`.
+- On death: remove from `state.npcs`, award loot, set namespaced flags for uniques.
+
+
+
+AI
+- Iterate over hostile NPCs in `state.npcs` by `behavior` (pig, bear, etc.).
+
+Maps
+- Do not pass `noise_tiles` into MapDef; set tile metadata in `on_load` instead.
+- Riddle room: torches as solid tiles + tile images; gold persistence flag `riddle_room.gold_taken`.
+- Forest C: leaves as `map_noise_tiles` + tile images; expand placements; bear persists with `forest_c.bear_dead`.
+- Forest B: pig persists with `forest_b.pig_dead`.
+
+
+Done in this pass
+- Alignment + attackable on Entity.
+- Unified to `state.npcs` for combat/AI; added tile rendering and triggers.
+- Namespaced flags and persistence for pig/bear/gold. Bunny spawn capped to 20.
+- More noisy tiles in Forest C; torches as solid tiles + images; leaves as noise tiles + images.
+
+Next
+- Optional: render special solid tiles with custom sprites distinct from walls.

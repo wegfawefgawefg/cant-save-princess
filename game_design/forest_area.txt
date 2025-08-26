@@ -1,0 +1,14 @@
+Forest Expansion TODO
+---------------------
+
+- Forest A/B/C/D maps added and connected:
+  - A east→D, north→B; B east→C; C south→D; D west→A, east→Bunny Area.
+- Forest B: one Pig (charges within 10 tiles; bites 1 dmg if adjacent).
+- Forest C: sleeping Bear + scattered leaves (noise triggers wake bear).
+- Trapper trades: rabbit(1), pig(50), bear(200).
+- Assets generated: pig.png, bear.png, torch.png, leaves.png.
+
+Follow-ups
+- Adjust encounter balance (pig speed, bear damage).
+- Consider auto-key transparency for fallback-generated sprites.
+- Expand shops with items to handle new areas (e.g., traps, bait).

@@ -48,9 +48,18 @@ uv run ruff format .
 
 ### Fast path (Linux)
 
+- Onefile binary:
+
 ```
 make build-linux
 ./dist/CantSavePrincess
+```
+
+- Onedir (easier to debug; assets visible on disk):
+
+```
+make build-linux-dir
+./dist/CantSavePrincess/CantSavePrincess
 ```
 
 ### PyInstaller (direct commands)
@@ -61,6 +70,7 @@ make build-linux
 uv run pyinstaller --name CantSavePrincess \
   --onefile --noconsole \
   --add-data "sounds:sounds" \
+  --add-data "sprites:sprites" \
   pyi_entry.py
 ```
 
@@ -70,6 +80,7 @@ uv run pyinstaller --name CantSavePrincess \
 uv run pyinstaller --name CantSavePrincess \
   --onefile --windowed \
   --add-data "sounds;sounds" \
+  --add-data "sprites;sprites" \
   pyi_entry.py
 ```
 
@@ -82,7 +93,7 @@ Notes:
 
 - No window on headless CI: use `SDL_VIDEODRIVER=dummy uv run game`.
 - No audio: set `SDL_AUDIODRIVER=dummy` to skip audio, or ensure OS audio devices are available.
-- Missing assets: ensure `sounds/` exists relative to the binary, or that it was bundled via `--add-data`.
+- Missing assets: ensure `sounds/` and `sprites/` exist relative to the binary, or that they were bundled via `--add-data`.
 
 References:
 https://inventwithpython.com/blog/2012/12/10/8-bit-nes-legend-of-zelda-map-data/

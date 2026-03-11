@@ -1,6 +1,10 @@
 # CantSavePrincess
 A small roguelike experiment, refactored to a de-OOPed architecture.
 
+![CantSavePrincess screenshot](image.png)
+
+<!-- Archive note: main development happened on 2025-01-29 to 2025-01-31 and 2025-08-24 to 2025-08-26. -->
+
 ## Setup
 
 This project uses uv to manage the environment and scripts.
